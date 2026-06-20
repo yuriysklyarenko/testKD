@@ -4,8 +4,14 @@ metadata:
   name: testkd
   labels:
     app: http-server
+    tier: frontend
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: http-server
@@ -13,24 +19,58 @@ spec:
     metadata:
       labels:
         app: http-server
+        tier: frontend
     spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: http-server
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: testkd
-        image: hashicorp/http-echo:latest
+        image: hashicorp/http-echo:0.2.3
+        imagePullPolicy: IfNotPresent
         args:
         - "-listen=:8000"
         - "-text=Hello from Kubernetes"
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        startupProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         ports:
         - containerPort: 8000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: kuber-service
-spec:
-  selector:
-    app: http-server
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
