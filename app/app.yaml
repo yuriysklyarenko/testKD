@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testKD
+  name: testkd
   labels:
     app: http-server
 spec:
@@ -15,7 +15,7 @@ spec:
         app: http-server
     spec:
       containers:
-      - name: testKD
+      - name: testkd
         image: hashicorp/http-echo:latest
         args:
         - "-listen=:8000"
