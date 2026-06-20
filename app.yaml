@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testkd
+  labels:
+    app: http-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: http-server
+  template:
+    metadata:
+      labels:
+        app: http-server
+    spec:
+      containers:
+      - name: testkd
+        image: hashicorp/http-echo:latest
+        args:
+        - "-listen=:8000"
+        - "-text=Hello from Kubernetes"
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuber-service
+spec:
+  selector:
+    app: http-server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
